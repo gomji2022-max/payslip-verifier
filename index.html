@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Qantas PaySlip Verifier</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e10a0a">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PaySlip Verifier">
+<style>
+  :root{
+    --red:#e10a0a; --red-dark:#b30707; --bg:#f4f5f7; --card:#ffffff;
+    --text:#1c1e21; --muted:#6b7280; --line:#e5e7eb; --green:#16a34a;
+    --amber:#d97706; --danger:#dc2626; --danger-bg:#fef2f2; --ok-bg:#f0fdf4;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);
+    padding-bottom:76px;}
+  header.top{background:var(--red);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:20;}
+  header.top h1{font-size:17px;margin:0;font-weight:700;}
+  header.top .sub{font-size:11px;opacity:.85;}
+  main{max-width:520px;margin:0 auto;padding:14px;}
+  .card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  .card h2{font-size:15px;margin:0 0 12px;color:var(--text);}
+  .card h3{font-size:13px;margin:14px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
+  .clockrow{display:flex;gap:12px;margin-bottom:8px;}
+  .clockbtn{flex:1;padding:26px 8px;border-radius:16px;border:none;font-size:18px;font-weight:700;color:#fff;
+    display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .clockbtn small{font-weight:400;font-size:12px;opacity:.9;}
+  .btn-in{background:var(--green);}
+  .btn-out{background:var(--red);}
+  .clockbtn:disabled{background:#c7c9cc;color:#8b8d90;}
+  .status-pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;}
+  .pill-working{background:#dcfce7;color:#166534;}
+  .pill-idle{background:#e5e7eb;color:#4b5563;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;}
+  .field input[type=text],.field input[type=number],.field input[type=date],.field input[type=time],.field select{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;background:#fff;color:var(--text);}
+  .row2{display:flex;gap:10px;}
+  .row2>.field{flex:1;}
+  .checkrow{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;font-size:13.5px;line-height:1.4;}
+  .checkrow input{margin-top:3px;}
+  .btn{display:inline-block;padding:10px 16px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;}
+  .btn-primary{background:var(--red);color:#fff;}
+  .btn-secondary{background:#eef0f2;color:var(--text);}
+  .btn-ghost{background:transparent;color:var(--red);padding:6px 8px;}
+  .btn-block{width:100%;}
+  nav.tabbar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);
+    display:flex;z-index:20;padding-bottom:env(safe-area-inset-bottom);}
+  nav.tabbar button{flex:1;background:none;border:none;padding:10px 4px 8px;font-size:11px;color:var(--muted);
+    display:flex;flex-direction:column;align-items:center;gap:3px;}
+  nav.tabbar button.active{color:var(--red);font-weight:700;}
+  nav.tabbar .ic{font-size:19px;}
+  .shift-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;}
+  .shift-item .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .shift-item .date{font-weight:700;font-size:14px;}
+  .shift-item .time{color:var(--muted);font-size:13px;}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .tag{font-size:11px;padding:3px 8px;border-radius:999px;background:#eef0f2;color:#374151;}
+  .tag.warn{background:#fef3c7;color:#92400e;}
+  .tag.ot{background:#ede9fe;color:#5b21b6;}
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 8px;}
+  table.calc{width:100%;border-collapse:collapse;font-size:13px;}
+  table.calc th, table.calc td{text-align:right;padding:7px 4px;border-bottom:1px solid var(--line);}
+  table.calc th:first-child, table.calc td:first-child{text-align:left;}
+  table.calc tr.diff td{background:var(--danger-bg);color:var(--danger);font-weight:700;}
+  table.calc tr.ok td{background:var(--ok-bg);}
+  .totalrow td{font-weight:800;border-top:2px solid var(--text);}
+  .note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;}
+  .helpbox{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#92400e;line-height:1.5;margin-bottom:12px;}
+  .linklist a{color:var(--red);text-decoration:none;font-weight:600;}
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1c1e21;color:#fff;padding:10px 18px;
+    border-radius:999px;font-size:13px;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .toast.show{opacity:1;}
+  .hidden{display:none !important;}
+  .flexbetween{display:flex;justify-content:space-between;align-items:center;}
+  .smallbtn{font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--text);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .rate-hist-item{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;font-size:13px;}
+  .danger-text{color:var(--danger);}
+  .muted{color:var(--muted);}
+  input[type=checkbox]{width:16px;height:16px;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>Qantas PaySlip Verifier</h1>
+    <div class="sub" id="headerSub">Level 5 · Airport Customer Experience</div>
+  </div>
+  <span class="status-pill pill-idle" id="statusPill">Off shift</span>
+</header>
+
+<main>
+
+  <!-- HOME TAB -->
+  <section id="tab-home">
+    <div class="card">
+      <h2>Today, <span id="todayLabel"></span></h2>
+      <div class="clockrow">
+        <button class="clockbtn btn-in" id="btnClockIn">🟢<br>Clock In<small id="clockInSub"></small></button>
+        <button class="clockbtn btn-out" id="btnClockOut" disabled>🔴<br>Clock Out<small id="clockOutSub"></small></button>
+      </div>
+      <div id="openShiftInfo" class="note hidden"></div>
+    </div>
+
+    <div class="card" id="quickOptionsCard">
+      <h2>This shift's options</h2>
+      <div class="checkrow">
+        <input type="checkbox" id="qDayOff">
+        <label for="qDayOff">This was originally my DO (day off) and I got called in (assumption — treated as full O/TIME 200%, please verify)</label>
+      </div>
+      <div class="checkrow">
+        <input type="checkbox" id="qSchedChange">
+        <label for="qSchedChange">This shift was added/changed with less than 48 hours' notice</label>
+      </div>
+      <div class="field hidden" id="qSchedPctWrap">
+        <label>Penalty rate applied</label>
+        <select id="qSchedPct">
+          <option value="150">150% (clause 41.9.1(d))</option>
+          <option value="200">200% (clause 41.9.1(d))</option>
+        </select>
+      </div>
+      <div class="checkrow">
+        <input type="checkbox" id="qPublicHoliday">
+        <label for="qPublicHoliday">Today is a public holiday</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Recent shifts</h2>
+      <div id="recentShifts"></div>
+    </div>
+  </section>
+
+  <!-- LOG TAB -->
+  <section id="tab-log" class="hidden">
+    <div class="card">
+      <div class="flexbetween">
+        <h2 style="margin:0">Shift log</h2>
+        <button class="smallbtn" id="btnAddManual">+ Add manually</button>
+      </div>
+      <div id="allShifts" style="margin-top:10px;"></div>
+    </div>
+  </section>
+
+  <!-- VERIFY TAB -->
+  <section id="tab-verify" class="hidden">
+    <div class="card">
+      <h2>Payslip verification</h2>
+      <div class="helpbox">
+        💡 Qantas payslips run on a lagged pay cycle. Based on 6 real payslips, <b>BASIC</b> pay covers the most recent
+        2-week window ending on the payslip's period-ending date, while <b>15% / 17.5% / 22.5% / 50% / 100% / OT200% /
+        Transport / Tea</b> allowances and penalties cover a separate 2-week window that starts and ends exactly
+        <b>7 days earlier</b>. The date ranges below are pre-filled using this pattern — edit them if needed.
+      </div>
+      <div class="field">
+        <label>Payslip period ending</label>
+        <input type="date" id="vPeriodEnd">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>BASIC window — start</label>
+          <input type="date" id="vBasicStart">
+        </div>
+        <div class="field">
+          <label>BASIC window — end</label>
+          <input type="date" id="vBasicEnd">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Penalties/allowances window — start</label>
+          <input type="date" id="vPenStart">
+        </div>
+        <div class="field">
+          <label>Penalties/allowances window — end</label>
+          <input type="date" id="vPenEnd">
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-block" id="btnCalcApp">① Calculate from my logged shifts</button>
+    </div>
+
+    <div class="card" id="payslipInputCard">
+      <h2>② Enter your actual payslip numbers</h2>
+      <p class="note">Enter the Hrs/Units shown on your real payslip for each line item. Dollar amounts are calculated automatically.</p>
+      <div id="payslipFields"></div>
+      <h3>Other items (SPEC-PENLTY, NIL 48, leave, etc. — not auto-verified)</h3>
+      <div id="otherLines"></div>
+      <button class="smallbtn" id="btnAddOtherLine">+ Add other item</button>
+    </div>
+
+    <div class="card">
+      <div class="flexbetween">
+        <h2 style="margin:0">③ Comparison</h2>
+        <button class="btn btn-primary" id="btnCompare">Compare</button>
+      </div>
+      <div id="compareResult"></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS TAB -->
+  <section id="tab-settings" class="hidden">
+    <div class="card">
+      <h2>My profile</h2>
+      <div class="field">
+        <label>Level</label>
+        <input type="text" id="pLevel" value="Level 5">
+      </div>
+      <div class="field">
+        <label>Department / base</label>
+        <input type="text" id="pDept" value="Airport Customer Experience">
+      </div>
+      <div class="checkrow">
+        <input type="checkbox" id="pMascot" checked>
+        <label for="pMascot">Based at Sydney Mascot airport (eligible for 17.5% rate)</label>
+      </div>
+      <div class="field">
+        <label>Standard daily hours (excess counts as O/TIME 200%)</label>
+        <input type="number" step="0.05" id="pStdHours" value="7.6">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="flexbetween">
+        <h2 style="margin:0">Pay rate history</h2>
+        <button class="smallbtn" id="btnAddRate">+ Add</button>
+      </div>
+      <p class="note">Add a new entry whenever your EBA rate rises. The most recent entry that applies to a shift's date is used automatically.</p>
+      <div id="rateHistList"></div>
+    </div>
+
+    <div class="card">
+      <h2>Allowance rates (based on latest history entry)</h2>
+      <div class="note" id="allowanceRatesNote"></div>
+    </div>
+
+    <div class="card">
+      <h2>Backup your data</h2>
+      <p class="note">This app stores all data locally in your phone's browser only (no server). Clearing browser data will erase your records, so export a backup regularly.</p>
+      <div class="row2">
+        <button class="btn btn-secondary btn-block" id="btnExport">Export (JSON)</button>
+        <button class="btn btn-secondary btn-block" id="btnImport">Import</button>
+      </div>
+      <input type="file" id="fileImport" accept="application/json" class="hidden">
+    </div>
+
+    <div class="card">
+      <h2>Rules &amp; assumptions</h2>
+      <p class="note">
+      This app's calculations are an <b>estimate</b> based on the EBA clause summary you provided (41.7, 41.8.1, 41.9.1(d), 44.2.1).
+      They may not match your real payslip exactly. In particular, the following items have uncertain trigger conditions and are
+      deliberately excluded from auto-calculation — enter them under "Other items" instead: SPEC-PENLTY, 50%/100% NIL 48, A/LVE PREM,
+      and various leave/TOIL codes. Always treat your real payslip and People Services (1300 303 411) as the source of truth.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<nav class="tabbar">
+  <button class="tabbtn active" data-tab="home"><span class="ic">🏠</span>Home</button>
+  <button class="tabbtn" data-tab="log"><span class="ic">📋</span>Log</button>
+  <button class="tabbtn" data-tab="verify"><span class="ic">🧾</span>Verify</button>
+  <button class="tabbtn" data-tab="settings"><span class="ic">⚙️</span>Settings</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
