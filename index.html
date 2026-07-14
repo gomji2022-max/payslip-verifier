@@ -189,7 +189,18 @@
 
     <div class="card" id="payslipInputCard">
       <h2>② Enter your actual payslip numbers</h2>
-      <p class="note">Enter the Hrs/Units shown on your real payslip for each line item. Dollar amounts are calculated automatically.</p>
+      <div class="helpbox">
+        📷 <b>Scan instead of typing:</b> upload a photo or PDF of your real payslip and the fields below will be
+        auto-filled. This runs entirely on your phone (no upload to any server) but needs internet the first time,
+        to download the scanning engine. OCR can misread numbers — <b>always check the filled-in fields against your
+        actual payslip</b> before comparing.
+      </div>
+      <div class="field">
+        <label>Upload payslip (PDF or photo)</label>
+        <input type="file" id="fPayslipScan" accept="application/pdf,image/*">
+      </div>
+      <div id="scanStatus" class="note"></div>
+      <p class="note">Or enter the Hrs/Units shown on your real payslip for each line item below. Dollar amounts are calculated automatically.</p>
       <div id="payslipFields"></div>
       <h3>Other items (SPEC-PENLTY, NIL 48, leave, etc. — not auto-verified)</h3>
       <div id="otherLines"></div>
